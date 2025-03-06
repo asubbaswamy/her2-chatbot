@@ -13,7 +13,7 @@ More details follow below.
 ## Installation and setup
 
 ### Easiest way to try the chatbot
-The (non-clinical) RAG chatbot is available to test as a (Docker image)[https://hub.docker.com/r/asubbaswamy/her2_chatbot].
+The (non-clinical) RAG chatbot is available to test as a [Docker image](https://hub.docker.com/r/asubbaswamy/her2_chatbot).
 
 If you have Docker installed, running the chatbot is easy.
 
@@ -34,9 +34,8 @@ The chatbot uses [ollama](https://ollama.com/) for open source LLMs.
 For reference, the code was developed on an apple silicon mac using Python version 3.11.
 ##### 4. In a separate terminal, run `ollama serve`.
 This makes ollama available to use for the chatbot code.
-##### 5. To run the chatbot, run `python src/chatbot.py` with the desired arguments.
-The chatbot assumes that the relevant vector databases for RAG have been constructed. If needed, run `python src/make_vector_db.py` before running the chatbot.
-
+##### 5. Generate vector database run `python src/make_vector_db.py`
+##### 6. To run the chatbot, run `python src/chatbot.py` with the desired arguments.
 Chatbot options include `--no_rag` to disable RAG and use an open source LLM with no context from the paper, `--clinical` to use [clinical knowledge embeddings](https://github.com/mims-harvard/Clinical-knowledge-embeddings) for RAG context retrieval, and `--model [llama3.2 | llama3.2:1b]` to select between two LLMs. Llama 3.2:1b (1 billion parameters) is smaller than its 3 billion parameter counterpart (Llama 3.2). 
 
 ## Chatbot Prototype Development
