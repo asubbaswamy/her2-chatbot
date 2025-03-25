@@ -71,8 +71,34 @@ def evaluate_factualness(bot, qa_set):
         correctness[i] = 1 * answer_in_response(answers[i], responses[i])
         
     return np.mean(correctness)
+
+def bootstrap_correctness_interval(bot, qa_set, n_bootstrap=25, conf=0.95):
+    """Use bootstrapping to calculate correctness CI
+
+    Args:
+        bot (ChatBot): ChatBot to evaluate
+        qa_set (DataFrame): Correctness questions & answers
+        n_bootstrap (int, optional): Number of bootstrap samples. Defaults to 100.
+        alpha (float, optional): Confidence level. Defaults to 0.95.
+
+    Returns:
+        Tuple(float, float, float): Mean, lower bound, upper bound of CI
+    """
     
+    n_questions = len(qa_set)
     
+    correctness = []
+    for _ in range(n_bootstrap):
+        # resample rows with replacement
+        indices = np.random.choice(n_questions, size=n_questions, replace=True)
+        sample = qa_set.iloc[indices].copy()
+        correctness.append(evaluate_factualness(bot, sample))
+    center = np.mean(correctness)
+    alpha = 1 - conf
+    t_value = stats.t.ppf(1 - alpha/2, df=n_bootstrap-1)
+    std_error = np.std(correctness, ddof=1)/np.sqrt(n_bootstrap)
+    return center, t_value*std_error
+
 def wilson_score_interval(accuracy, n, confidence=0.95):
     """Compute error bar for proportion-based metrics
 
@@ -100,6 +126,7 @@ def main():
     runtime_means = []
     runtime_stds = []
     correctness_scores = []
+    correctness_error_bars = []
     n_trials = 25
     for i, bot in tqdm(enumerate(bots)):
         mean, std = measure_response_time(bot, n_trials)
@@ -107,15 +134,14 @@ def main():
         runtime_stds.append(std)
         print("\n" + bot_names[i])
         print(f"Avg Runtime {mean} seconds; St dev {std}")
-        
-        correctness = evaluate_factualness(bot, facts_qa)
-        correctness_scores.append(correctness)
-        print(f"Correctness {correctness}")
+        c, interval = bootstrap_correctness_interval(bot, facts_qa, n_bootstrap=10)
+        correctness_scores.append(c)
+        correctness_error_bars.append(interval)
+        print(f"Correctness {c} +/- {interval}")
     
     
     # plot correctness and runtimes
     plt.bar(bot_names, correctness_scores)
-    correctness_error_bars = [wilson_score_interval(c, len(facts_qa)) for c in correctness_scores]
     plt.errorbar(bot_names, correctness_scores, yerr=correctness_error_bars, capsize=5, ecolor='black',elinewidth=1.5, capthick=1.5, fmt='none')
     plt.xlabel('Chatbot')
     plt.xticks(rotation=45)
